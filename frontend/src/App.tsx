@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Container, Table, Button, Form, Modal, InputGroup } from 'react-bootstrap'
+import { Container, Table, Button, Form, Modal, InputGroup, Row, Col, Badge } from 'react-bootstrap'
 import axios from 'axios'
 
 const API_URL = 'http://localhost:8000/services/'
@@ -7,22 +7,30 @@ const API_URL = 'http://localhost:8000/services/'
 interface CloudService {
   id?: number
   name: string
+  description: string
   provider: string
-  category: string
-  cost: number
-  owner: string
-  status: string
+  provider_description: string
+  participants: string
+  q_failure: number
+  q_data_leakage: number
+  q_legal: number
+  q_vendor: number
+  q_disconnection: number
+  total_score?: number
+  impact_level?: string
 }
 
 const PROVIDERS = ['AWS', 'Azure', 'GCP', 'DigitalOcean', 'Cloudflare', 'Heroku', 'Other']
-const CATEGORIES = ['Compute', 'Storage', 'Database', 'Networking', 'Security', 'Analytics', 'Other']
+
+const DEFAULT_SERVICE: CloudService = {
+  name: '', description: '', provider: 'AWS', provider_description: '', participants: '',
+  q_failure: 0, q_data_leakage: 0, q_legal: 0, q_vendor: 0, q_disconnection: 0
+}
 
 function App() {
   const [services, setServices] = useState<CloudService[]>([])
   const [showModal, setShowModal] = useState(false)
-  const [currentService, setCurrentService] = useState<CloudService>({
-    name: '', provider: 'AWS', category: 'Compute', cost: 0, owner: '', status: 'Active'
-  })
+  const [currentService, setCurrentService] = useState<CloudService>(DEFAULT_SERVICE)
   const [searchTerm, setSearchTerm] = useState('')
 
   const fetchServices = async () => {
@@ -67,10 +75,31 @@ function App() {
     if (service) {
       setCurrentService(service)
     } else {
-      setCurrentService({ name: '', provider: 'AWS', category: 'Compute', cost: 0, owner: '', status: 'Active' })
+      setCurrentService({ ...DEFAULT_SERVICE })
     }
     setShowModal(true)
   }
+
+  const getBadgeColor = (level?: string) => {
+    switch(level) {
+      case 'High': return 'danger';
+      case 'Medium': return 'warning';
+      case 'Minimal': return 'success';
+      default: return 'secondary';
+    }
+  }
+
+  const currentScore = (
+    (currentService.q_failure || 0) +
+    (currentService.q_data_leakage || 0) +
+    (currentService.q_legal || 0) +
+    (currentService.q_vendor || 0) +
+    (currentService.q_disconnection || 0)
+  )
+
+  let currentLevel = 'Minimal'
+  if (currentScore >= 70) currentLevel = 'High'
+  else if (currentScore >= 50) currentLevel = 'Medium'
 
   return (
     <Container className="mt-4">
@@ -92,10 +121,9 @@ function App() {
           <tr>
             <th>Name</th>
             <th>Provider</th>
-            <th>Category</th>
-            <th>Monthly Cost ($)</th>
-            <th>Owner</th>
-            <th>Status</th>
+            <th>Participants</th>
+            <th>Risk Score</th>
+            <th>Impact Level</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -104,78 +132,138 @@ function App() {
             <tr key={s.id}>
               <td>{s.name}</td>
               <td>{s.provider}</td>
-              <td>{s.category}</td>
-              <td>{s.cost.toFixed(2)}</td>
-              <td>{s.owner}</td>
-              <td>{s.status}</td>
+              <td>{s.participants}</td>
+              <td>{s.total_score}</td>
+              <td><Badge bg={getBadgeColor(s.impact_level)}>{s.impact_level}</Badge></td>
               <td>
-                <Button variant="warning" size="sm" className="me-2" onClick={() => openModal(s)}>Edit</Button>
-                <Button variant="danger" size="sm" onClick={() => s.id && handleDelete(s.id)}>Delete</Button>
+                <Button variant="outline-primary" size="sm" className="me-2" onClick={() => openModal(s)}>Edit</Button>
+                <Button variant="outline-danger" size="sm" onClick={() => s.id && handleDelete(s.id)}>Delete</Button>
               </td>
             </tr>
           ))}
         </tbody>
       </Table>
 
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
+      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
         <Modal.Header closeButton>
           <Modal.Title>{currentService.id ? 'Edit Service' : 'Add New Service'}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
-            <Form.Group className="mb-3" controlId="formServiceName">
-              <Form.Label>Service Name</Form.Label>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3" controlId="formServiceName">
+                  <Form.Label>Service Name</Form.Label>
+                  <Form.Control 
+                    type="text" 
+                    value={currentService.name} 
+                    onChange={(e) => setCurrentService({...currentService, name: e.target.value})}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3" controlId="formProvider">
+                  <Form.Label>Provider</Form.Label>
+                  <Form.Select 
+                    value={currentService.provider} 
+                    onChange={(e) => setCurrentService({...currentService, provider: e.target.value})}
+                  >
+                    {PROVIDERS.map(p => <option key={p} value={p}>{p}</option>)}
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Form.Group className="mb-3" controlId="formDescription">
+              <Form.Label>Service Description</Form.Label>
+              <Form.Control 
+                as="textarea" rows={2}
+                value={currentService.description} 
+                onChange={(e) => setCurrentService({...currentService, description: e.target.value})}
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3" controlId="formProviderDescription">
+              <Form.Label>Provider Description</Form.Label>
+              <Form.Control 
+                as="textarea" rows={2}
+                value={currentService.provider_description} 
+                onChange={(e) => setCurrentService({...currentService, provider_description: e.target.value})}
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3" controlId="formParticipants">
+              <Form.Label>Participants</Form.Label>
               <Form.Control 
                 type="text" 
-                value={currentService.name} 
-                onChange={(e) => setCurrentService({...currentService, name: e.target.value})}
+                value={currentService.participants} 
+                onChange={(e) => setCurrentService({...currentService, participants: e.target.value})}
               />
             </Form.Group>
-            <Form.Group className="mb-3" controlId="formProvider">
-              <Form.Label>Provider</Form.Label>
-              <Form.Select 
-                value={currentService.provider} 
-                onChange={(e) => setCurrentService({...currentService, provider: e.target.value})}
-              >
-                {PROVIDERS.map(p => <option key={p} value={p}>{p}</option>)}
-              </Form.Select>
-            </Form.Group>
-            <Form.Group className="mb-3" controlId="formCategory">
-              <Form.Label>Category</Form.Label>
-              <Form.Select 
-                value={currentService.category} 
-                onChange={(e) => setCurrentService({...currentService, category: e.target.value})}
-              >
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </Form.Select>
-            </Form.Group>
-            <Form.Group className="mb-3" controlId="formCost">
-              <Form.Label>Monthly Cost ($)</Form.Label>
-              <Form.Control 
-                type="number" 
-                value={currentService.cost} 
-                onChange={(e) => setCurrentService({...currentService, cost: parseFloat(e.target.value) || 0})}
-              />
-            </Form.Group>
-            <Form.Group className="mb-3" controlId="formOwner">
-              <Form.Label>Owner</Form.Label>
-              <Form.Control 
-                type="text" 
-                value={currentService.owner} 
-                onChange={(e) => setCurrentService({...currentService, owner: e.target.value})}
-              />
-            </Form.Group>
-            <Form.Group className="mb-3" controlId="formStatus">
-              <Form.Label>Status</Form.Label>
-              <Form.Select 
-                value={currentService.status} 
-                onChange={(e) => setCurrentService({...currentService, status: e.target.value})}
-              >
-                <option value="Active">Active</option>
-                <option value="Deprecated">Deprecated</option>
-                <option value="Planned">Planned</option>
-              </Form.Select>
-            </Form.Group>
+
+            <hr />
+            <h5>Risk Assessment</h5>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+               <strong>Total Score: {currentScore} / 100</strong>
+               <Badge bg={getBadgeColor(currentLevel)} className="fs-6">{currentLevel} Impact</Badge>
+            </div>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3" controlId="formQ1">
+                  <Form.Label>1. Impact of Failure (0-30)</Form.Label>
+                  <Form.Control 
+                    type="number" min="0" max="30"
+                    value={currentService.q_failure} 
+                    onChange={(e) => setCurrentService({...currentService, q_failure: Math.min(30, Math.max(0, parseInt(e.target.value) || 0))})}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3" controlId="formQ2">
+                  <Form.Label>2. Impact of Data Leakage (0-30)</Form.Label>
+                  <Form.Control 
+                    type="number" min="0" max="30"
+                    value={currentService.q_data_leakage} 
+                    onChange={(e) => setCurrentService({...currentService, q_data_leakage: Math.min(30, Math.max(0, parseInt(e.target.value) || 0))})}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={4}>
+                <Form.Group className="mb-3" controlId="formQ3">
+                  <Form.Label>3. Legal/Reg (0-15)</Form.Label>
+                  <Form.Control 
+                    type="number" min="0" max="15"
+                    value={currentService.q_legal} 
+                    onChange={(e) => setCurrentService({...currentService, q_legal: Math.min(15, Math.max(0, parseInt(e.target.value) || 0))})}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <Form.Group className="mb-3" controlId="formQ4">
+                  <Form.Label>4. Vendor Lock-in (0-15)</Form.Label>
+                  <Form.Control 
+                    type="number" min="0" max="15"
+                    value={currentService.q_vendor} 
+                    onChange={(e) => setCurrentService({...currentService, q_vendor: Math.min(15, Math.max(0, parseInt(e.target.value) || 0))})}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <Form.Group className="mb-3" controlId="formQ5">
+                  <Form.Label>5. Disconnection (0-10)</Form.Label>
+                  <Form.Control 
+                    type="number" min="0" max="10"
+                    value={currentService.q_disconnection} 
+                    onChange={(e) => setCurrentService({...currentService, q_disconnection: Math.min(10, Math.max(0, parseInt(e.target.value) || 0))})}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
           </Form>
         </Modal.Body>
         <Modal.Footer>

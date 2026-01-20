@@ -1,23 +1,50 @@
 # Cloud Governance Committee
 
-A centralized web application to map and manage cloud service usage.
+A centralized web application to map, manage, and risk-assess cloud service usage.
+
+## Features
+- **Service Inventory:** View all cloud services with ownership and risk details.
+- **Risk Assessment:** Built-in questionnaire to calculate risk scores (0-100) and impact levels (Minimal, Medium, High).
+- **Detailed Tracking:** Store descriptions for services, providers, and participants.
+- **Search:** Quickly find services by name or provider.
+
+## Technology Stack
+- **Frontend:** React, TypeScript, Bootstrap, Vite
+- **Backend:** Python, FastAPI, SQLModel (SQLite)
+- **Containerization:** Docker & Docker Compose
 
 ## Setup
 
-### Backend
-1. Navigate to `backend/`
-2. Activate virtual environment: `source venv/bin/activate`
-3. Install dependencies: `pip install -r requirements.txt`
-4. Start the server: `uvicorn main:app --reload`
+### Using Docker (Recommended)
+1. Ensure Docker is running.
+2. Start the application:
+   ```bash
+   docker-compose up -d --build
+   ```
+3. Access the application:
+   - **Frontend:** [http://localhost:5173](http://localhost:5173)
+   - **Backend API:** [http://localhost:8000](http://localhost:8000)
+   - **API Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
 
-### Frontend
-1. Navigate to `frontend/`
-2. Install dependencies: `npm install`
-3. Start the dev server: `npm run dev`
+### Local Development
+**Backend:**
+```bash
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
 
-## Features
-- **Map Services:** Enter details like name, provider, category, cost, and owner.
-- **Service Inventory:** View all services in a clean table.
-- **Search:** Search for services by name or provider.
-- **Edit/Delete:** Keep your service mapping up to date.
-- **API Docs:** Interactive documentation available at `http://localhost:8000/docs`
+**Frontend:**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## Testing
+Run the regression test suite to verify both frontend and backend:
+```bash
+./run_tests.sh
+```

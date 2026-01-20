@@ -3,7 +3,7 @@ from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select
 from database import engine, create_db_and_tables, get_session
-from models import CloudService, CloudServiceCreate, CloudServiceRead, CloudServiceUpdate
+from models import CloudService, CloudServiceCreate, CloudServiceRead, CloudServiceUpdate, CloudServiceBase
 
 app = FastAPI(title="Cloud Governance Committee API")
 
@@ -14,6 +14,23 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+def calculate_impact(service: CloudServiceBase):
+    total = (
+        service.q_failure +
+        service.q_data_leakage +
+        service.q_legal +
+        service.q_vendor +
+        service.q_disconnection
+    )
+    service.total_score = total
+    
+    if total < 50:
+        service.impact_level = "Minimal"
+    elif 50 <= total <= 69:
+        service.impact_level = "Medium"
+    else:
+        service.impact_level = "High"
 
 @app.on_event("startup")
 def on_startup():
@@ -26,6 +43,7 @@ def read_root():
 @app.post("/services/", response_model=CloudServiceRead)
 def create_service(service: CloudServiceCreate, session: Session = Depends(get_session)):
     db_service = CloudService.from_orm(service)
+    calculate_impact(db_service)
     session.add(db_service)
     session.commit()
     session.refresh(db_service)
@@ -59,9 +77,14 @@ def update_service(
     db_service = session.get(CloudService, service_id)
     if not db_service:
         raise HTTPException(status_code=404, detail="Service not found")
+    
     service_data = service.dict(exclude_unset=True)
     for key, value in service_data.items():
         setattr(db_service, key, value)
+    
+    # Recalculate score on update
+    calculate_impact(db_service)
+    
     session.add(db_service)
     session.commit()
     session.refresh(db_service)
