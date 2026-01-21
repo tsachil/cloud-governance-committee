@@ -25,6 +25,9 @@ class CloudServiceBase(SQLModel):
     q_vendor: int = Field(default=0, description="Impact of vendor cloudability (0-15)")
     q_disconnection: int = Field(default=0, description="Impact of disconnections (0-10)")
     
+    # Notes
+    committee_notes: str = Field(default="")
+    
     # Calculated Fields
     total_score: int = Field(default=0)
     impact_level: str = Field(default="Minimal")
@@ -57,3 +60,5 @@ class CloudServiceUpdate(SQLModel):
     q_legal: Optional[int] = None
     q_vendor: Optional[int] = None
     q_disconnection: Optional[int] = None
+    
+    committee_notes: Optional[str] = None

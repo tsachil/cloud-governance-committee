@@ -26,6 +26,8 @@ interface CloudService {
   q_vendor: number
   q_disconnection: number
   
+  committee_notes: string
+
   total_score?: number
   impact_level?: string
 }
@@ -45,7 +47,8 @@ const DEFAULT_SERVICE: CloudService = {
   q_data_leakage: 0, 
   q_legal: 0, 
   q_vendor: 0, 
-  q_disconnection: 0
+  q_disconnection: 0,
+  committee_notes: ''
 }
 
 function App() {
@@ -354,6 +357,16 @@ function App() {
                 </Form.Group>
               </Col>
             </Row>
+
+            <hr />
+            <Form.Group className="mb-3" controlId="formCommitteeNotes">
+              <Form.Label>Committee Notes</Form.Label>
+              <Form.Control 
+                as="textarea" rows={4}
+                value={currentService.committee_notes} 
+                onChange={(e) => setCurrentService({...currentService, committee_notes: e.target.value})}
+              />
+            </Form.Group>
 
           </Form>
         </Modal.Body>

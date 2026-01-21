@@ -34,7 +34,8 @@ def test_create_service_with_new_fields(client: TestClient):
             "service_date": "2023-10-27",
             "representative_cto": "Alice",
             "representative_security": "Bob",
-            "q_failure": 30
+            "q_failure": 30,
+            "committee_notes": "Discussed in meeting on Tuesday."
         },
     )
     assert response.status_code == 200
@@ -43,16 +44,12 @@ def test_create_service_with_new_fields(client: TestClient):
     assert data["service_date"] == "2023-10-27"
     assert data["representative_cto"] == "Alice"
     assert data["representative_security"] == "Bob"
+    assert data["committee_notes"] == "Discussed in meeting on Tuesday."
     # Check default calc logic still works
     assert data["total_score"] == 30
     assert data["impact_level"] == "Minimal"
 
 def test_create_service_default_date(client: TestClient):
-    # If date is omitted, it should default to today (handled by model or frontend, 
-    # but strictly speaking backend model has default_factory=datetime.now)
-    # However, Pydantic/SQLModel models with default_factory might need the field to be excluded from input to trigger.
-    # Our API expects a CloudServiceCreate object.
-    
     response = client.post(
         "/services/",
         json={
@@ -77,10 +74,12 @@ def test_update_representatives(client: TestClient):
         f"/services/{service_id}",
         json={
             "representative_infra": "Charlie",
-            "representative_risk": "Dana"
+            "representative_risk": "Dana",
+            "committee_notes": "Updated notes."
         }
     )
     assert response.status_code == 200
     data = response.json()
     assert data["representative_infra"] == "Charlie"
     assert data["representative_risk"] == "Dana"
+    assert data["committee_notes"] == "Updated notes."

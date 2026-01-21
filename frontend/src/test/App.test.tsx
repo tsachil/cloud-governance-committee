@@ -36,7 +36,7 @@ describe('App Component', () => {
     })
   })
 
-  it('opens modal with new inputs', async () => {
+  it('opens modal with new inputs including committee notes', async () => {
     (axios.get as any).mockResolvedValue({ data: [] })
     render(<App />)
 
@@ -46,9 +46,9 @@ describe('App Component', () => {
       expect(screen.getByLabelText('CTO Representative')).toBeInTheDocument()
       expect(screen.getByLabelText('Security Representative')).toBeInTheDocument()
       expect(screen.getByLabelText('Date')).toBeInTheDocument()
-      // Provider should now be a text input, not select (checking placeholder or type is harder implicitly, 
-      // but if it accepts text freely we are good)
       expect(screen.getByLabelText('Provider')).toHaveAttribute('type', 'text')
+      // Check for the new field
+      expect(screen.getByLabelText('Committee Notes')).toBeInTheDocument()
     })
   })
 })
