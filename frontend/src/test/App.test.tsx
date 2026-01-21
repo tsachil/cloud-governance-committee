@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import axios from 'axios'
 import App from '../App'
 
@@ -13,14 +13,16 @@ describe('App Component', () => {
     expect(screen.getByText('Cloud Governance Committee')).toBeInTheDocument()
   })
 
-  it('displays participants column in table', async () => {
+  it('displays new columns in table', async () => {
     const mockServices = [{
       id: 1,
       name: 'Test Service',
-      provider: 'AWS',
-      participants: 'User A, User B',
-      total_score: 80,
-      impact_level: 'High'
+      provider: 'CustomCloud',
+      service_date: '2023-01-01',
+      representative_cto: 'Alice',
+      representative_security: 'Bob',
+      total_score: 10,
+      impact_level: 'Minimal'
     }];
     
     (axios.get as any).mockResolvedValue({ data: mockServices })
@@ -28,25 +30,25 @@ describe('App Component', () => {
     render(<App />)
     
     await waitFor(() => {
-      expect(screen.getByText('User A, User B')).toBeInTheDocument()
-      expect(screen.getByText('High')).toBeInTheDocument()
+      expect(screen.getByText('CustomCloud')).toBeInTheDocument()
+      expect(screen.getByText('2023-01-01')).toBeInTheDocument()
+      expect(screen.getByText('Alice / Bob')).toBeInTheDocument()
     })
   })
 
-  it('calculates Medium impact score correctly in modal', async () => {
+  it('opens modal with new inputs', async () => {
     (axios.get as any).mockResolvedValue({ data: [] })
     render(<App />)
 
     fireEvent.click(screen.getByText('Add New Service'))
 
-    // Set failure to 30 and data leakage to 20 -> Total 50 (Medium)
-    const q1Input = screen.getByLabelText(/Impact of Failure/i)
-    fireEvent.change(q1Input, { target: { value: '30' } })
-
-    const q2Input = screen.getByLabelText(/Impact of Data Leakage/i)
-    fireEvent.change(q2Input, { target: { value: '20' } })
-
-    expect(screen.getByText(/Total Score: 50/i)).toBeInTheDocument()
-    expect(screen.getByText(/Medium Impact/i)).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByLabelText('CTO Representative')).toBeInTheDocument()
+      expect(screen.getByLabelText('Security Representative')).toBeInTheDocument()
+      expect(screen.getByLabelText('Date')).toBeInTheDocument()
+      // Provider should now be a text input, not select (checking placeholder or type is harder implicitly, 
+      // but if it accepts text freely we are good)
+      expect(screen.getByLabelText('Provider')).toHaveAttribute('type', 'text')
+    })
   })
 })

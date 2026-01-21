@@ -1,13 +1,23 @@
 from typing import Optional
+from datetime import date, datetime
 from sqlmodel import Field, SQLModel
 
 class CloudServiceBase(SQLModel):
     name: str = Field(index=True)
     description: str = Field(default="")
-    provider: str
+    provider: str  # Free text
     provider_description: str = Field(default="")
-    participants: str = Field(default="")
     
+    # Representatives
+    representative_cto: str = Field(default="")
+    representative_security: str = Field(default="")
+    representative_infra: str = Field(default="")
+    representative_risk: str = Field(default="")
+    representative_other: str = Field(default="")
+    
+    # Date
+    service_date: date = Field(default_factory=date.today)
+
     # Risk Assessment Questions
     q_failure: int = Field(default=0, description="Impact of failure (0-30)")
     q_data_leakage: int = Field(default=0, description="Impact of data leakage (0-30)")
@@ -33,7 +43,15 @@ class CloudServiceUpdate(SQLModel):
     description: Optional[str] = None
     provider: Optional[str] = None
     provider_description: Optional[str] = None
-    participants: Optional[str] = None
+    
+    representative_cto: Optional[str] = None
+    representative_security: Optional[str] = None
+    representative_infra: Optional[str] = None
+    representative_risk: Optional[str] = None
+    representative_other: Optional[str] = None
+    
+    service_date: Optional[date] = None
+
     q_failure: Optional[int] = None
     q_data_leakage: Optional[int] = None
     q_legal: Optional[int] = None

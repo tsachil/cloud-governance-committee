@@ -5,6 +5,9 @@ WORKDIR /app
 # Create a non-root user
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
+# Create data directory and set permissions
+RUN mkdir -p /data && chown -R appuser:appuser /data
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt

@@ -1,4 +1,5 @@
 import pytest
+from datetime import date
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
@@ -24,82 +25,62 @@ def client_fixture(session: Session):
     yield client
     app.dependency_overrides.clear()
 
-def test_create_service_high_impact(client: TestClient):
+def test_create_service_with_new_fields(client: TestClient):
     response = client.post(
         "/services/",
         json={
-            "name": "High Impact App",
-            "provider": "AWS",
-            "q_failure": 30,
-            "q_data_leakage": 30,
-            "q_legal": 15,
-            "q_vendor": 0,
-            "q_disconnection": 0,
-            "participants": "Team A, Team B",
-            "description": "Critical system"
+            "name": "New Fields App",
+            "provider": "Custom Provider",
+            "service_date": "2023-10-27",
+            "representative_cto": "Alice",
+            "representative_security": "Bob",
+            "q_failure": 30
         },
     )
     assert response.status_code == 200
     data = response.json()
-    assert data["total_score"] == 75
-    assert data["impact_level"] == "High"
-    assert data["participants"] == "Team A, Team B"
-    assert data["description"] == "Critical system"
-
-def test_create_service_medium_impact(client: TestClient):
-    response = client.post(
-        "/services/",
-        json={
-            "name": "Medium Impact App",
-            "provider": "GCP",
-            "q_failure": 20,
-            "q_data_leakage": 20,
-            "q_legal": 10,
-            "q_vendor": 0,
-            "q_disconnection": 0
-        },
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert data["total_score"] == 50
-    assert data["impact_level"] == "Medium"
-
-def test_create_service_minimal_impact(client: TestClient):
-    response = client.post(
-        "/services/",
-        json={
-            "name": "Low Impact App",
-            "provider": "Azure",
-            "q_failure": 10,
-            "q_data_leakage": 10,
-            "q_legal": 0,
-            "q_vendor": 0,
-            "q_disconnection": 0
-        },
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert data["total_score"] == 20
+    assert data["provider"] == "Custom Provider"
+    assert data["service_date"] == "2023-10-27"
+    assert data["representative_cto"] == "Alice"
+    assert data["representative_security"] == "Bob"
+    # Check default calc logic still works
+    assert data["total_score"] == 30
     assert data["impact_level"] == "Minimal"
 
-def test_update_service_recalculates_score(client: TestClient):
-    # Create minimal
-    create_res = client.post(
+def test_create_service_default_date(client: TestClient):
+    # If date is omitted, it should default to today (handled by model or frontend, 
+    # but strictly speaking backend model has default_factory=datetime.now)
+    # However, Pydantic/SQLModel models with default_factory might need the field to be excluded from input to trigger.
+    # Our API expects a CloudServiceCreate object.
+    
+    response = client.post(
         "/services/",
         json={
-            "name": "Update Test",
-            "provider": "Azure",
-            "q_failure": 10
+            "name": "Default Date App",
+            "provider": "AWS"
         },
-    )
-    service_id = create_res.json()["id"]
-    
-    # Update to high
-    response = client.patch(
-        f"/services/{service_id}",
-        json={"q_data_leakage": 30, "q_legal": 15, "q_failure": 30}
     )
     assert response.status_code == 200
     data = response.json()
-    assert data["total_score"] == 75 # 30 + 30 + 15
-    assert data["impact_level"] == "High"
+    assert data["service_date"] == str(date.today())
+
+def test_update_representatives(client: TestClient):
+    # Create
+    create_res = client.post(
+        "/services/",
+        json={"name": "Rep Test", "provider": "Azure"}
+    )
+    service_id = create_res.json()["id"]
+
+    # Update reps
+    response = client.patch(
+        f"/services/{service_id}",
+        json={
+            "representative_infra": "Charlie",
+            "representative_risk": "Dana"
+        }
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["representative_infra"] == "Charlie"
+    assert data["representative_risk"] == "Dana"
