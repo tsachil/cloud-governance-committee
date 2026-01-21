@@ -10,7 +10,7 @@ describe('App Component', () => {
   it('renders the main title', () => {
     (axios.get as any).mockResolvedValue({ data: [] })
     render(<App />)
-    expect(screen.getByText('Cloud Governance Committee')).toBeInTheDocument()
+    expect(screen.getByText('ועדת ממשל ענן')).toBeInTheDocument()
   })
 
   it('displays new columns in table', async () => {
@@ -40,15 +40,15 @@ describe('App Component', () => {
     (axios.get as any).mockResolvedValue({ data: [] })
     render(<App />)
 
-    fireEvent.click(screen.getByText('Add New Service'))
+    fireEvent.click(screen.getByText('הוסף שירות חדש'))
 
     await waitFor(() => {
-      expect(screen.getByLabelText('CTO Representative')).toBeInTheDocument()
-      expect(screen.getByLabelText('Security Representative')).toBeInTheDocument()
-      expect(screen.getByLabelText('Date')).toBeInTheDocument()
-      expect(screen.getByLabelText('Provider')).toHaveAttribute('type', 'text')
+      expect(screen.getByLabelText('נציג CTO')).toBeInTheDocument()
+      expect(screen.getByLabelText('נציג אבטחת מידע')).toBeInTheDocument()
+      expect(screen.getByLabelText('תאריך')).toBeInTheDocument()
+      expect(screen.getByLabelText('ספק')).toHaveAttribute('type', 'text')
       // Check for the new field
-      expect(screen.getByLabelText('Committee Notes')).toBeInTheDocument()
+      expect(screen.getByLabelText('הערות הוועדה')).toBeInTheDocument()
     })
   })
 })

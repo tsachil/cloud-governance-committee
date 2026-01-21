@@ -85,7 +85,7 @@ function App() {
   }
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this service?')) {
+    if (window.confirm('האם אתה בטוח שברצונך למחוק שירות זה?')) {
       try {
         await axios.delete(`${API_URL}${id}`)
         fetchServices()
@@ -125,6 +125,15 @@ function App() {
     }
   }
 
+  const translateImpact = (level?: string) => {
+    switch(level) {
+      case 'High': return 'גבוה';
+      case 'Medium': return 'בינוני';
+      case 'Minimal': return 'מזערי';
+      default: return level;
+    }
+  }
+
   const currentScore = (
     (currentService.q_failure || 0) +
     (currentService.q_data_leakage || 0) +
@@ -139,29 +148,29 @@ function App() {
 
   return (
     <Container className="mt-4">
-      <h1 className="mb-4">Cloud Governance Committee</h1>
+      <h1 className="mb-4">ועדת ממשל ענן</h1>
       
       <div className="d-flex justify-content-between mb-3">
         <InputGroup className="w-50">
           <Form.Control
-            placeholder="Search services..."
+            placeholder="חיפוש שירותים..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </InputGroup>
-        <Button variant="primary" onClick={() => openModal()}>Add New Service</Button>
+        <Button variant="primary" onClick={() => openModal()}>הוסף שירות חדש</Button>
       </div>
 
       <Table striped bordered hover responsive>
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Name</th>
-            <th>Provider</th>
-            <th>Reps (CTO/Sec)</th>
-            <th>Risk Score</th>
-            <th>Impact Level</th>
-            <th>Actions</th>
+            <th>תאריך</th>
+            <th>שם השירות</th>
+            <th>ספק</th>
+            <th>נציגים (CTO/אבטחה)</th>
+            <th>ציון סיכון</th>
+            <th>רמת השפעה</th>
+            <th>פעולות</th>
           </tr>
         </thead>
         <tbody>
@@ -172,10 +181,10 @@ function App() {
               <td>{s.provider}</td>
               <td>{s.representative_cto} / {s.representative_security}</td>
               <td>{s.total_score}</td>
-              <td><Badge bg={getBadgeColor(s.impact_level)}>{s.impact_level}</Badge></td>
+              <td><Badge bg={getBadgeColor(s.impact_level)}>{translateImpact(s.impact_level)}</Badge></td>
               <td>
-                <Button variant="outline-primary" size="sm" className="me-2" onClick={() => openModal(s)}>Edit</Button>
-                <Button variant="outline-danger" size="sm" onClick={() => s.id && handleDelete(s.id)}>Delete</Button>
+                <Button variant="outline-primary" size="sm" className="me-2" onClick={() => openModal(s)}>ערוך</Button>
+                <Button variant="outline-danger" size="sm" onClick={() => s.id && handleDelete(s.id)}>מחק</Button>
               </td>
             </tr>
           ))}
@@ -184,14 +193,14 @@ function App() {
 
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
         <Modal.Header closeButton>
-          <Modal.Title>{currentService.id ? 'Edit Service' : 'Add New Service'}</Modal.Title>
+          <Modal.Title>{currentService.id ? 'עריכת שירות' : 'הוספת שירות חדש'}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
             <Row>
               <Col md={4}>
                 <Form.Group className="mb-3" controlId="formDate">
-                  <Form.Label>Date</Form.Label>
+                  <Form.Label>תאריך</Form.Label>
                   <Form.Control 
                     type="date"
                     value={currentService.service_date}
@@ -201,7 +210,7 @@ function App() {
               </Col>
               <Col md={4}>
                 <Form.Group className="mb-3" controlId="formServiceName">
-                  <Form.Label>Service Name</Form.Label>
+                  <Form.Label>שם השירות</Form.Label>
                   <Form.Control 
                     type="text" 
                     value={currentService.name} 
@@ -211,10 +220,10 @@ function App() {
               </Col>
               <Col md={4}>
                 <Form.Group className="mb-3" controlId="formProvider">
-                  <Form.Label>Provider</Form.Label>
+                  <Form.Label>ספק</Form.Label>
                   <Form.Control 
                     type="text"
-                    placeholder="e.g. AWS, Azure"
+                    placeholder="למשל AWS, Azure"
                     value={currentService.provider} 
                     onChange={(e) => setCurrentService({...currentService, provider: e.target.value})}
                   />
@@ -223,7 +232,7 @@ function App() {
             </Row>
 
             <Form.Group className="mb-3" controlId="formDescription">
-              <Form.Label>Service Description</Form.Label>
+              <Form.Label>תיאור השירות</Form.Label>
               <Form.Control 
                 as="textarea" rows={2}
                 value={currentService.description} 
@@ -232,7 +241,7 @@ function App() {
             </Form.Group>
 
             <Form.Group className="mb-3" controlId="formProviderDescription">
-              <Form.Label>Provider Description</Form.Label>
+              <Form.Label>תיאור הספק</Form.Label>
               <Form.Control 
                 as="textarea" rows={2}
                 value={currentService.provider_description} 
@@ -241,11 +250,11 @@ function App() {
             </Form.Group>
 
             <hr />
-            <h5>Representatives</h5>
+            <h5>נציגים</h5>
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3" controlId="repCTO">
-                  <Form.Label>CTO Representative</Form.Label>
+                  <Form.Label>נציג CTO</Form.Label>
                   <Form.Control 
                     type="text" 
                     value={currentService.representative_cto} 
@@ -255,7 +264,7 @@ function App() {
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3" controlId="repSec">
-                  <Form.Label>Security Representative</Form.Label>
+                  <Form.Label>נציג אבטחת מידע</Form.Label>
                   <Form.Control 
                     type="text" 
                     value={currentService.representative_security} 
@@ -267,7 +276,7 @@ function App() {
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3" controlId="repInfra">
-                  <Form.Label>Infrastructure Representative</Form.Label>
+                  <Form.Label>נציג תשתיות</Form.Label>
                   <Form.Control 
                     type="text" 
                     value={currentService.representative_infra} 
@@ -277,7 +286,7 @@ function App() {
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3" controlId="repRisk">
-                  <Form.Label>Risk Mgmt Representative</Form.Label>
+                  <Form.Label>נציג ניהול סיכונים</Form.Label>
                   <Form.Control 
                     type="text" 
                     value={currentService.representative_risk} 
@@ -287,7 +296,7 @@ function App() {
               </Col>
             </Row>
             <Form.Group className="mb-3" controlId="repOther">
-              <Form.Label>Other Representatives</Form.Label>
+              <Form.Label>נציגים נוספים</Form.Label>
               <Form.Control 
                 type="text" 
                 value={currentService.representative_other} 
@@ -296,16 +305,16 @@ function App() {
             </Form.Group>
 
             <hr />
-            <h5>Risk Assessment</h5>
+            <h5>הערכת סיכונים</h5>
             <div className="d-flex justify-content-between align-items-center mb-3">
-               <strong>Total Score: {currentScore} / 100</strong>
-               <Badge bg={getBadgeColor(currentLevel)} className="fs-6">{currentLevel} Impact</Badge>
+               <strong>ציון כולל: {currentScore} / 100</strong>
+               <Badge bg={getBadgeColor(currentLevel)} className="fs-6">השפעה {translateImpact(currentLevel)}</Badge>
             </div>
 
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3" controlId="formQ1">
-                  <Form.Label>1. Impact of Failure (0-30)</Form.Label>
+                  <Form.Label>1. השפעת כשל (0-30)</Form.Label>
                   <Form.Control 
                     type="number" min="0" max="30"
                     value={currentService.q_failure} 
@@ -315,7 +324,7 @@ function App() {
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3" controlId="formQ2">
-                  <Form.Label>2. Impact of Data Leakage (0-30)</Form.Label>
+                  <Form.Label>2. השפעת דליפת מידע (0-30)</Form.Label>
                   <Form.Control 
                     type="number" min="0" max="30"
                     value={currentService.q_data_leakage} 
@@ -328,7 +337,7 @@ function App() {
             <Row>
               <Col md={4}>
                 <Form.Group className="mb-3" controlId="formQ3">
-                  <Form.Label>3. Legal/Reg (0-15)</Form.Label>
+                  <Form.Label>3. היבטים משפטיים/רגולטוריים (0-15)</Form.Label>
                   <Form.Control 
                     type="number" min="0" max="15"
                     value={currentService.q_legal} 
@@ -338,7 +347,7 @@ function App() {
               </Col>
               <Col md={4}>
                 <Form.Group className="mb-3" controlId="formQ4">
-                  <Form.Label>4. Vendor Lock-in (0-15)</Form.Label>
+                  <Form.Label>4. נעילת ספק (0-15)</Form.Label>
                   <Form.Control 
                     type="number" min="0" max="15"
                     value={currentService.q_vendor} 
@@ -348,7 +357,7 @@ function App() {
               </Col>
               <Col md={4}>
                 <Form.Group className="mb-3" controlId="formQ5">
-                  <Form.Label>5. Disconnection (0-10)</Form.Label>
+                  <Form.Label>5. ניתוק שירות (0-10)</Form.Label>
                   <Form.Control 
                     type="number" min="0" max="10"
                     value={currentService.q_disconnection} 
@@ -360,7 +369,7 @@ function App() {
 
             <hr />
             <Form.Group className="mb-3" controlId="formCommitteeNotes">
-              <Form.Label>Committee Notes</Form.Label>
+              <Form.Label>הערות הוועדה</Form.Label>
               <Form.Control 
                 as="textarea" rows={4}
                 value={currentService.committee_notes} 
@@ -371,8 +380,8 @@ function App() {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>Close</Button>
-          <Button variant="primary" onClick={handleSave}>Save Changes</Button>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>סגור</Button>
+          <Button variant="primary" onClick={handleSave}>שמור שינויים</Button>
         </Modal.Footer>
       </Modal>
     </Container>

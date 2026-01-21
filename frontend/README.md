@@ -1,73 +1,41 @@
-# React + TypeScript + Vite
+# Cloud Governance Committee - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This directory contains the frontend user interface for the Cloud Governance Committee application. It is a Single Page Application (SPA) built to allow easy management and risk assessment of cloud services.
 
-Currently, two official plugins are available:
+## Technologies
+- **React:** JavaScript library for building user interfaces.
+- **TypeScript:** Typed superset of JavaScript.
+- **Vite:** Next Generation Frontend Tooling (fast build tool).
+- **Bootstrap (via React-Bootstrap):** Styling framework for responsive design.
+- **Axios:** Promise based HTTP client for the browser.
+- **Vitest:** Testing framework.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Setup & Running locally
 
-## React Compiler
+1. **Navigate to the frontend directory:**
+   ```bash
+   cd frontend
+   ```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-## Expanding the ESLint configuration
+3. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+   The application will be available at `http://localhost:5173`.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Features
+- **Dashboard:** Displays a table of all registered cloud services with key metrics.
+- **Add/Edit Modal:** A comprehensive form to input service details, assign representatives, and answer risk assessment questions.
+- **Real-time Risk Calculation:** Automatically calculates total risk score and assigns an impact level (Minimal, Medium, High) based on questionnaire answers.
+- **Search:** Filter services by name or provider.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Testing
+To run the unit tests:
+```bash
+npm run test
 ```
