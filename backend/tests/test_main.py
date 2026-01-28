@@ -1,8 +1,7 @@
-import pytest
-from datetime import date
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
+import pytest
 from main import app, get_session
 from models import CloudService
 
@@ -25,61 +24,65 @@ def client_fixture(session: Session):
     yield client
     app.dependency_overrides.clear()
 
-def test_create_service_with_new_fields(client: TestClient):
+def test_create_service(client: TestClient):
     response = client.post(
         "/services/",
         json={
-            "name": "New Fields App",
-            "provider": "Custom Provider",
-            "service_date": "2023-10-27",
-            "representative_cto": "Alice",
-            "representative_security": "Bob",
-            "q_failure": 30,
-            "committee_notes": "Discussed in meeting on Tuesday."
+            "system_name": "Test Project",
+            "applicant": "Alice",
+            "total_score": 10
         },
     )
     assert response.status_code == 200
     data = response.json()
-    assert data["provider"] == "Custom Provider"
-    assert data["service_date"] == "2023-10-27"
-    assert data["representative_cto"] == "Alice"
-    assert data["representative_security"] == "Bob"
-    assert data["committee_notes"] == "Discussed in meeting on Tuesday."
-    # Check default calc logic still works
-    assert data["total_score"] == 30
-    assert data["impact_level"] == "Minimal"
+    assert data["system_name"] == "Test Project"
+    assert data["applicant"] == "Alice"
+    assert data["total_score"] == 10
+    assert "id" in data
 
-def test_create_service_default_date(client: TestClient):
-    response = client.post(
+def test_read_services(client: TestClient):
+    client.post(
         "/services/",
-        json={
-            "name": "Default Date App",
-            "provider": "AWS"
-        },
+        json={"system_name": "Service 1", "applicant": "Bob"}
     )
+    client.post(
+        "/services/",
+        json={"system_name": "Service 2", "applicant": "Charlie"}
+    )
+    
+    response = client.get("/services/")
     assert response.status_code == 200
     data = response.json()
-    assert data["service_date"] == str(date.today())
+    assert len(data) == 2
+    assert data[0]["system_name"] == "Service 1"
 
-def test_update_representatives(client: TestClient):
+def test_update_service(client: TestClient):
     # Create
-    create_res = client.post(
+    create_resp = client.post(
         "/services/",
-        json={"name": "Rep Test", "provider": "Azure"}
+        json={"system_name": "Old Name", "total_score": 20}
     )
-    service_id = create_res.json()["id"]
-
-    # Update reps
+    service_id = create_resp.json()["id"]
+    
+    # Update
     response = client.patch(
         f"/services/{service_id}",
-        json={
-            "representative_infra": "Charlie",
-            "representative_risk": "Dana",
-            "committee_notes": "Updated notes."
-        }
+        json={"system_name": "New Name", "total_score": 80}
     )
     assert response.status_code == 200
     data = response.json()
-    assert data["representative_infra"] == "Charlie"
-    assert data["representative_risk"] == "Dana"
-    assert data["committee_notes"] == "Updated notes."
+    assert data["system_name"] == "New Name"
+    assert data["total_score"] == 80
+
+def test_delete_service(client: TestClient):
+    create_resp = client.post(
+        "/services/",
+        json={"system_name": "To Delete"}
+    )
+    service_id = create_resp.json()["id"]
+    
+    del_resp = client.delete(f"/services/{service_id}")
+    assert del_resp.status_code == 200
+    
+    get_resp = client.get(f"/services/{service_id}")
+    assert get_resp.status_code == 404

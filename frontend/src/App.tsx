@@ -1,54 +1,99 @@
 import { useState, useEffect } from 'react'
-import { Container, Table, Button, Form, Modal, InputGroup, Row, Col, Badge } from 'react-bootstrap'
+import { Container, Row, Col, Table, Button, Modal, Form, Badge, InputGroup, Tab, Tabs } from 'react-bootstrap'
 import axios from 'axios'
-
-const API_URL = 'http://localhost:8000/services/'
+import './App.css'
 
 interface CloudService {
   id?: number
-  name: string
-  description: string
-  provider: string
-  provider_description: string
-  
-  // Representatives
-  representative_cto: string
-  representative_security: string
-  representative_infra: string
-  representative_risk: string
-  representative_other: string
-  
-  service_date: string // YYYY-MM-DD format
-
-  q_failure: number
-  q_data_leakage: number
-  q_legal: number
-  q_vendor: number
-  q_disconnection: number
-  
+  system_name: string
+  organization: string
+  committee_date: string
+  requesting_unit: string
+  requesting_product_manager: string
+  applicant: string
+  cmdb_id: number
+  subsidiaries: string
+  solution_description: string
+  total_score: number
+  approval_path: string
+  status: string
+  committee_summary: string
   committee_notes: string
-
-  total_score?: number
-  impact_level?: string
+  approver: string
+  approval_date: string
+  explanation_data_leakage: string
+  score_data_leakage: number
+  explanation_provider_fit: string
+  score_provider_fit: number
+  explanation_service_failure: string
+  score_service_failure: number
+  explanation_compliance: string
+  score_compliance: number
+  explanation_exit_strategy: string
+  score_exit_strategy: number
+  vp_technologies: string
+  vp_business_division: string
+  vp_approval_date: string
+  management_approval: string
+  management_approval_date: string
+  board_approval: string
+  board_approval_date: string
+  branch_cto: string
+  branch_infrastructure: string
+  dept_infosec: string
+  tech_risk_management: string
+  additional_factors: string
+  other_factors: string
+  provider_description: string
+  is_significant_outsourcing: string
+  is_significant_cyber: string
+  is_bia_relevant: string
 }
 
 const DEFAULT_SERVICE: CloudService = {
-  name: '', 
-  description: '', 
-  provider: '', 
-  provider_description: '', 
-  representative_cto: '',
-  representative_security: '',
-  representative_infra: '',
-  representative_risk: '',
-  representative_other: '',
-  service_date: new Date().toISOString().split('T')[0],
-  q_failure: 0, 
-  q_data_leakage: 0, 
-  q_legal: 0, 
-  q_vendor: 0, 
-  q_disconnection: 0,
-  committee_notes: ''
+  system_name: '',
+  organization: '',
+  committee_date: '',
+  requesting_unit: '',
+  requesting_product_manager: '',
+  applicant: '',
+  cmdb_id: '',
+  subsidiaries: '',
+  solution_description: '',
+  total_score: 0,
+  approval_path: '',
+  status: '',
+  committee_summary: '',
+  committee_notes: '',
+  approver: '',
+  approval_date: '',
+  explanation_data_leakage: '',
+  score_data_leakage: 0,
+  explanation_provider_fit: '',
+  score_provider_fit: 0,
+  explanation_service_failure: '',
+  score_service_failure: 0,
+  explanation_compliance: '',
+  score_compliance: 0,
+  explanation_exit_strategy: '',
+  score_exit_strategy: 0,
+  vp_technologies: '',
+  vp_business_division: '',
+  vp_approval_date: '',
+  management_approval: '',
+  management_approval_date: '',
+  board_approval: '',
+  board_approval_date: '',
+  branch_cto: '',
+  branch_infrastructure: '',
+  dept_infosec: '',
+  tech_risk_management: '',
+  additional_factors: '',
+  other_factors: '',
+  provider_description: '',
+  is_significant_outsourcing: '',
+  is_significant_cyber: '',
+  is_bia_relevant: ''
 }
 
 function App() {
@@ -56,13 +101,14 @@ function App() {
   const [showModal, setShowModal] = useState(false)
   const [currentService, setCurrentService] = useState<CloudService>(DEFAULT_SERVICE)
   const [searchTerm, setSearchTerm] = useState('')
+  const [sortConfig, setSortConfig] = useState<{ key: keyof CloudService; direction: 'asc' | 'desc' } | null>(null)
 
   const fetchServices = async () => {
     try {
-      const response = await axios.get(`${API_URL}?search=${searchTerm}`)
+      const response = await axios.get(`http://localhost:8000/services/?search=${searchTerm}`)
       setServices(response.data)
     } catch (error) {
-      console.error('Error fetching services', error)
+      console.error('Error fetching services:', error)
     }
   }
 
@@ -70,118 +116,224 @@ function App() {
     fetchServices()
   }, [searchTerm])
 
+  const handleSort = (key: keyof CloudService) => {
+    let direction: 'asc' | 'desc' = 'asc'
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc'
+    }
+    setSortConfig({ key, direction })
+  }
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return ''
+    const parts = dateString.split('-')
+    if (parts.length !== 3) return dateString
+    const [year, month, day] = parts
+    return `${day}-${month}-${year}`
+  }
+
+  const sortedServices = [...services].sort((a, b) => {
+    if (!sortConfig) return 0
+    
+    let aValue = a[sortConfig.key]
+    let bValue = b[sortConfig.key]
+
+    // Handle null/undefined
+    if (aValue === undefined || aValue === null) aValue = ''
+    if (bValue === undefined || bValue === null) bValue = ''
+
+    if (sortConfig.key === 'committee_date' || sortConfig.key === 'approval_date') {
+      const dateA = new Date(aValue as string).getTime()
+      const dateB = new Date(bValue as string).getTime()
+      return sortConfig.direction === 'asc' ? dateA - dateB : dateB - dateA
+    }
+
+    if (aValue < bValue) {
+      return sortConfig.direction === 'asc' ? -1 : 1
+    }
+    if (aValue > bValue) {
+      return sortConfig.direction === 'asc' ? 1 : -1
+    }
+    return 0
+  })
+
+  const getSortIndicator = (key: keyof CloudService) => {
+    if (sortConfig?.key === key) {
+      return sortConfig.direction === 'asc' ? ' ▲' : ' ▼'
+    }
+    return ''
+  }
+
   const handleSave = async () => {
+    if (!currentService.system_name.trim()) {
+      alert('נא להזין שם מערכת / פרוייקט')
+      return
+    }
+
+    // Risk Score Validation
+    if ((currentService.score_service_failure || 0) < 0 || (currentService.score_service_failure || 0) > 30) {
+        alert('ציון כשל בשירות חייב להיות בין 0 ל-30')
+        return
+    }
+    if ((currentService.score_data_leakage || 0) < 0 || (currentService.score_data_leakage || 0) > 30) {
+        alert('ציון דליפת מידע חייב להיות בין 0 ל-30')
+        return
+    }
+    if ((currentService.score_compliance || 0) < 0 || (currentService.score_compliance || 0) > 15) {
+        alert('ציון עמידה בדין חייב להיות בין 0 ל-15')
+        return
+    }
+    if ((currentService.score_provider_fit || 0) < 0 || (currentService.score_provider_fit || 0) > 15) {
+        alert('ציון התאמת ספק חייב להיות בין 0 ל-15')
+        return
+    }
+    if ((currentService.score_exit_strategy || 0) < 0 || (currentService.score_exit_strategy || 0) > 10) {
+        alert('ציון יכולת צמצום חייב להיות בין 0 ל-10')
+        return
+    }
+
     try {
       if (currentService.id) {
-        await axios.patch(`${API_URL}${currentService.id}`, currentService)
+        await axios.patch(`http://localhost:8000/services/${currentService.id}`, currentService)
       } else {
-        await axios.post(API_URL, currentService)
+        await axios.post('http://localhost:8000/services/', currentService)
       }
       setShowModal(false)
       fetchServices()
     } catch (error) {
-      console.error('Error saving service', error)
+      console.error('Error saving service:', error)
+      alert('שגיאה בשמירת הנתונים')
     }
   }
 
   const handleDelete = async (id: number) => {
     if (window.confirm('האם אתה בטוח שברצונך למחוק שירות זה?')) {
       try {
-        await axios.delete(`${API_URL}${id}`)
+        await axios.delete(`http://localhost:8000/services/${id}`)
         fetchServices()
       } catch (error) {
-        console.error('Error deleting service', error)
+        console.error('Error deleting service:', error)
       }
     }
   }
 
   const openModal = (service?: CloudService) => {
     if (service) {
-      setCurrentService(service)
+      setCurrentService({ ...service })
     } else {
-      // Find the last added service (assuming highest ID is last, or just last in list)
-      const lastService = services.length > 0 ? services[services.length - 1] : null
-      
-      setCurrentService({ 
-        ...DEFAULT_SERVICE, 
-        service_date: new Date().toISOString().split('T')[0], // Always default to today for new
-        // Pre-fill representatives from the last service if available
-        representative_cto: lastService?.representative_cto || '',
-        representative_security: lastService?.representative_security || '',
-        representative_infra: lastService?.representative_infra || '',
-        representative_risk: lastService?.representative_risk || '',
-        representative_other: lastService?.representative_other || ''
-      })
+      setCurrentService({ ...DEFAULT_SERVICE })
     }
     setShowModal(true)
   }
 
-  const getBadgeColor = (level?: string) => {
-    switch(level) {
-      case 'High': return 'danger';
-      case 'Medium': return 'warning';
-      case 'Minimal': return 'success';
-      default: return 'secondary';
-    }
+  const getBadgeColor = (score: number) => {
+    if (score >= 70) return 'danger'
+    if (score >= 50) return 'warning'
+    return 'success'
   }
 
-  const translateImpact = (level?: string) => {
-    switch(level) {
-      case 'High': return 'גבוה';
-      case 'Medium': return 'בינוני';
-      case 'Minimal': return 'מזערי';
-      default: return level;
-    }
+  const calculateTotalScore = (service: CloudService) => {
+    return (service.score_data_leakage || 0) +
+           (service.score_provider_fit || 0) +
+           (service.score_service_failure || 0) +
+           (service.score_compliance || 0) +
+           (service.score_exit_strategy || 0)
   }
 
-  const currentScore = (
-    (currentService.q_failure || 0) +
-    (currentService.q_data_leakage || 0) +
-    (currentService.q_legal || 0) +
-    (currentService.q_vendor || 0) +
-    (currentService.q_disconnection || 0)
-  )
+  const handleScoreChange = (field: keyof CloudService, value: number) => {
+    let max = 100;
+    if (field === 'score_service_failure' || field === 'score_data_leakage') max = 30;
+    else if (field === 'score_compliance' || field === 'score_provider_fit') max = 15;
+    else if (field === 'score_exit_strategy') max = 10;
 
-  let currentLevel = 'Minimal'
-  if (currentScore >= 70) currentLevel = 'High'
-  else if (currentScore >= 50) currentLevel = 'Medium'
+    if (value < 0) value = 0;
+    if (value > max) {
+        alert(`הערך המקסימלי עבור שדה זה הוא ${max}`);
+        value = max;
+    }
+
+    const updatedService = { ...currentService, [field]: value }
+    updatedService.total_score = calculateTotalScore(updatedService)
+    setCurrentService(updatedService)
+  }
+
+  const renderInput = (label: string, field: keyof CloudService, type = 'text', as?: any, rows?: number, readOnly = false) => {
+    let min = undefined;
+    let max = undefined;
+    
+    if (field === 'score_service_failure' || field === 'score_data_leakage') {
+        min = 0; max = 30;
+    } else if (field === 'score_compliance' || field === 'score_provider_fit') {
+        min = 0; max = 15;
+    } else if (field === 'score_exit_strategy') {
+        min = 0; max = 10;
+    }
+
+    return (
+    <Form.Group className="mb-3" controlId={`form-${field}`}>
+      <Form.Label>{label}</Form.Label>
+      <Form.Control 
+        type={type} 
+        as={as}
+        rows={rows}
+        readOnly={readOnly}
+        min={min}
+        max={max}
+        value={currentService[field] || ''} 
+        onChange={(e) => {
+            if (field.startsWith('score_')) {
+                handleScoreChange(field, parseInt(e.target.value) || 0)
+            } else {
+                setCurrentService({...currentService, [field]: type === 'number' ? (parseInt(e.target.value) || 0) : e.target.value})
+            }
+        }}
+      />
+    </Form.Group>
+  )}
 
   return (
-    <Container className="mt-4">
-      <h1 className="mb-4">ועדת ממשל ענן</h1>
+    <Container fluid className="mt-4">
+      <h1 className="mb-4">ועדת ממשל ענן - דוח מרוכז</h1>
       
       <div className="d-flex justify-content-between mb-3">
         <InputGroup className="w-50">
-          <Form.Control
-            placeholder="חיפוש שירותים..."
+          <Form.Control 
+            placeholder="חיפוש לפי שם מערכת או מגיש..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </InputGroup>
-        <Button variant="primary" onClick={() => openModal()}>הוסף שירות חדש</Button>
+        <Button onClick={() => openModal()}>הוסף שירות חדש</Button>
       </div>
 
-      <Table striped bordered hover responsive>
+      <div className="table-responsive">
+      <Table striped bordered hover responsive size="sm">
         <thead>
           <tr>
-            <th>תאריך</th>
-            <th>שם השירות</th>
-            <th>ספק</th>
-            <th>נציגים (CTO/אבטחה)</th>
-            <th>ציון סיכון</th>
-            <th>רמת השפעה</th>
+            <th onClick={() => handleSort('id')} style={{ cursor: 'pointer' }}>#{getSortIndicator('id')}</th>
+            <th onClick={() => handleSort('system_name')} style={{ cursor: 'pointer' }}>שם מערכת{getSortIndicator('system_name')}</th>
+            <th onClick={() => handleSort('organization')} style={{ cursor: 'pointer' }}>ארגון{getSortIndicator('organization')}</th>
+            <th onClick={() => handleSort('applicant')} style={{ cursor: 'pointer' }}>מגיש{getSortIndicator('applicant')}</th>
+            <th onClick={() => handleSort('committee_date')} style={{ cursor: 'pointer' }}>מועד ועדה{getSortIndicator('committee_date')}</th>
+            <th onClick={() => handleSort('total_score')} style={{ cursor: 'pointer' }}>ציון{getSortIndicator('total_score')}</th>
+            <th onClick={() => handleSort('status')} style={{ cursor: 'pointer' }}>סטטוס{getSortIndicator('status')}</th>
             <th>פעולות</th>
           </tr>
         </thead>
         <tbody>
-          {services.map((s) => (
+          {sortedServices.map((s) => (
             <tr key={s.id}>
-              <td>{s.service_date}</td>
-              <td>{s.name}</td>
-              <td>{s.provider}</td>
-              <td>{s.representative_cto} / {s.representative_security}</td>
-              <td>{s.total_score}</td>
-              <td><Badge bg={getBadgeColor(s.impact_level)}>{translateImpact(s.impact_level)}</Badge></td>
+              <td>{s.id}</td>
+              <td>{s.system_name}</td>
+              <td>{s.organization}</td>
+              <td>{s.applicant}</td>
+              <td>{formatDate(s.committee_date)}</td>
+              <td>
+                <Badge bg={getBadgeColor(s.total_score)}>
+                  {s.total_score}
+                </Badge>
+              </td>
+              <td>{s.status}</td>
               <td>
                 <Button variant="outline-primary" size="sm" className="me-2" onClick={() => openModal(s)}>ערוך</Button>
                 <Button variant="outline-danger" size="sm" onClick={() => s.id && handleDelete(s.id)}>מחק</Button>
@@ -190,198 +342,125 @@ function App() {
           ))}
         </tbody>
       </Table>
+      </div>
 
-      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
+      <Modal show={showModal} onHide={() => setShowModal(false)} size="xl">
         <Modal.Header closeButton>
           <Modal.Title>{currentService.id ? 'עריכת שירות' : 'הוספת שירות חדש'}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <Form>
-            <Row>
-              <Col md={4}>
-                <Form.Group className="mb-3" controlId="formDate">
-                  <Form.Label>תאריך</Form.Label>
-                  <Form.Control 
-                    type="date"
-                    value={currentService.service_date}
-                    onChange={(e) => setCurrentService({...currentService, service_date: e.target.value})}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3" controlId="formServiceName">
-                  <Form.Label>שם השירות</Form.Label>
-                  <Form.Control 
-                    type="text" 
-                    value={currentService.name} 
-                    onChange={(e) => setCurrentService({...currentService, name: e.target.value})}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3" controlId="formProvider">
-                  <Form.Label>ספק</Form.Label>
-                  <Form.Control 
-                    type="text"
-                    placeholder="למשל AWS, Azure"
-                    value={currentService.provider} 
-                    onChange={(e) => setCurrentService({...currentService, provider: e.target.value})}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
+          <Tabs defaultActiveKey="general" id="service-tabs" className="mb-3">
+            <Tab eventKey="general" title="פרטים כלליים">
+              <Row>
+                <Col md={6}>{renderInput('שם מערכת / פרויקט', 'system_name')}</Col>
+                <Col md={6}>{renderInput('ארגון', 'organization')}</Col>
+              </Row>
+              <Row>
+                <Col md={4}>{renderInput('חטיבה דורשת', 'requesting_unit')}</Col>
+                <Col md={4}>{renderInput('מנהל מוצר דורש', 'requesting_product_manager')}</Col>
+                <Col md={4}>{renderInput('מגיש הבקשה', 'applicant')}</Col>
+              </Row>
+              <Row>
+                <Col md={4}>{renderInput('מספר קטלוגי ב-CMDB', 'cmdb_id', 'number')}</Col>
+                <Col md={4}>{renderInput('חברות בנות', 'subsidiaries')}</Col>
+                <Col md={4}>{renderInput('מועד הועדה', 'committee_date', 'date')}</Col>
+              </Row>
+              {renderInput('תיאור הפתרון', 'solution_description', 'text', 'textarea', 3)}
+              {renderInput('תיאור ספק הענן', 'provider_description', 'text', 'textarea', 3)}
+            </Tab>
 
-            <Form.Group className="mb-3" controlId="formDescription">
-              <Form.Label>תיאור השירות</Form.Label>
-              <Form.Control 
-                as="textarea" rows={2}
-                value={currentService.description} 
-                onChange={(e) => setCurrentService({...currentService, description: e.target.value})}
-              />
-            </Form.Group>
+            <Tab eventKey="risk" title="סיכונים וציונים">
+               <Row className="mb-3 align-items-center">
+                 <Col md={2}><strong>ציון כולל:</strong></Col>
+                 <Col md={2}>
+                    <Form.Control 
+                        type="number" 
+                        value={currentService.total_score} 
+                        readOnly 
+                        className={`bg-${getBadgeColor(currentService.total_score)} text-white fw-bold text-center`}
+                    />
+                 </Col>
+                 <Col md={8}>
+                    <Badge bg={getBadgeColor(currentService.total_score)} className="fs-6">
+                        {currentService.total_score >= 70 ? 'High' : currentService.total_score >= 50 ? 'Medium' : 'Minimal'} Impact
+                    </Badge>
+                 </Col>
+               </Row>
+               <hr/>
+               <Row>
+                 <Col md={9}>{renderInput('הסבר - כשל בשירות', 'explanation_service_failure', 'text', 'textarea', 2)}</Col>
+                 <Col md={3}>{renderInput('ציון (עד 30)', 'score_service_failure', 'number')}</Col>
+               </Row>
+               <Row>
+                 <Col md={9}>{renderInput('הסבר - השפעת דליפת מידע', 'explanation_data_leakage', 'text', 'textarea', 2)}</Col>
+                 <Col md={3}>{renderInput('ציון (עד 30)', 'score_data_leakage', 'number')}</Col>
+               </Row>
+               <Row>
+                 <Col md={9}>{renderInput('הסבר - עמידה בדין', 'explanation_compliance', 'text', 'textarea', 2)}</Col>
+                 <Col md={3}>{renderInput('ציון (עד 15)', 'score_compliance', 'number')}</Col>
+               </Row>
+               <Row>
+                 <Col md={9}>{renderInput('הסבר - התאמת ספק', 'explanation_provider_fit', 'text', 'textarea', 2)}</Col>
+                 <Col md={3}>{renderInput('ציון (עד 15)', 'score_provider_fit', 'number')}</Col>
+               </Row>
+               <Row>
+                 <Col md={9}>{renderInput('הסבר - יכולת צמצום', 'explanation_exit_strategy', 'text', 'textarea', 2)}</Col>
+                 <Col md={3}>{renderInput('ציון (עד 10)', 'score_exit_strategy', 'number')}</Col>
+               </Row>
+            </Tab>
 
-            <Form.Group className="mb-3" controlId="formProviderDescription">
-              <Form.Label>תיאור הספק</Form.Label>
-              <Form.Control 
-                as="textarea" rows={2}
-                value={currentService.provider_description} 
-                onChange={(e) => setCurrentService({...currentService, provider_description: e.target.value})}
-              />
-            </Form.Group>
+            <Tab eventKey="approval" title="אישורים וסטטוס">
+              <Row>
+                <Col md={6}>{renderInput('סטטוס', 'status')}</Col>
+                <Col md={6}>{renderInput('מסלול אישורים נדרש', 'approval_path')}</Col>
+              </Row>
+              <Row>
+                <Col md={6}>{renderInput('גורם מאשר', 'approver')}</Col>
+                <Col md={6}>{renderInput('תאריך אישור', 'approval_date', 'date')}</Col>
+              </Row>
+              <hr />
+              <Row>
+                <Col md={4}>{renderInput('סמנכ"ל טכנולוגיות', 'vp_technologies')}</Col>
+                <Col md={4}>{renderInput('סמנכ"ל חטיבה עסקית', 'vp_business_division')}</Col>
+                <Col md={4}>{renderInput('תאריך אישור סמנכ"לים', 'vp_approval_date', 'date')}</Col>
+              </Row>
+              <Row>
+                <Col md={6}>{renderInput('אישור הנהלה', 'management_approval')}</Col>
+                <Col md={6}>{renderInput('תאריך אישור הנהלה', 'management_approval_date', 'date')}</Col>
+              </Row>
+              <Row>
+                <Col md={6}>{renderInput('אישור דירקטוריון', 'board_approval')}</Col>
+                <Col md={6}>{renderInput('תאריך אישור דירקטוריון', 'board_approval_date', 'date')}</Col>
+              </Row>
+            </Tab>
 
-            <hr />
-            <h5>נציגים</h5>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3" controlId="repCTO">
-                  <Form.Label>נציג CTO</Form.Label>
-                  <Form.Control 
-                    type="text" 
-                    value={currentService.representative_cto} 
-                    onChange={(e) => setCurrentService({...currentService, representative_cto: e.target.value})}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3" controlId="repSec">
-                  <Form.Label>נציג אבטחת מידע</Form.Label>
-                  <Form.Control 
-                    type="text" 
-                    value={currentService.representative_security} 
-                    onChange={(e) => setCurrentService({...currentService, representative_security: e.target.value})}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3" controlId="repInfra">
-                  <Form.Label>נציג תשתיות</Form.Label>
-                  <Form.Control 
-                    type="text" 
-                    value={currentService.representative_infra} 
-                    onChange={(e) => setCurrentService({...currentService, representative_infra: e.target.value})}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3" controlId="repRisk">
-                  <Form.Label>נציג ניהול סיכונים</Form.Label>
-                  <Form.Control 
-                    type="text" 
-                    value={currentService.representative_risk} 
-                    onChange={(e) => setCurrentService({...currentService, representative_risk: e.target.value})}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-            <Form.Group className="mb-3" controlId="repOther">
-              <Form.Label>נציגים נוספים</Form.Label>
-              <Form.Control 
-                type="text" 
-                value={currentService.representative_other} 
-                onChange={(e) => setCurrentService({...currentService, representative_other: e.target.value})}
-              />
-            </Form.Group>
+            <Tab eventKey="stakeholders" title="גורמים מעורבים">
+               <Row>
+                 <Col md={4}>{renderInput('ענף CTO', 'branch_cto')}</Col>
+                 <Col md={4}>{renderInput('ענף תשתית', 'branch_infrastructure')}</Col>
+                 <Col md={4}>{renderInput('אגף אבטחת מידע', 'dept_infosec')}</Col>
+               </Row>
+               <Row>
+                 <Col md={4}>{renderInput('ניהול סיכונים', 'tech_risk_management')}</Col>
+               </Row>
+               {renderInput('נוספים', 'additional_factors', 'text', 'textarea', 2)}
+               {renderInput('גורמים נוספים', 'other_factors', 'text', 'textarea', 2)}
+            </Tab>
 
-            <hr />
-            <h5>הערכת סיכונים</h5>
-            <div className="d-flex justify-content-between align-items-center mb-3">
-               <strong>ציון כולל: {currentScore} / 100</strong>
-               <Badge bg={getBadgeColor(currentLevel)} className="fs-6">השפעה {translateImpact(currentLevel)}</Badge>
-            </div>
-
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3" controlId="formQ1">
-                  <Form.Label>1. השפעת כשל (0-30)</Form.Label>
-                  <Form.Control 
-                    type="number" min="0" max="30"
-                    value={currentService.q_failure} 
-                    onChange={(e) => setCurrentService({...currentService, q_failure: Math.min(30, Math.max(0, parseInt(e.target.value) || 0))})}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3" controlId="formQ2">
-                  <Form.Label>2. השפעת דליפת מידע (0-30)</Form.Label>
-                  <Form.Control 
-                    type="number" min="0" max="30"
-                    value={currentService.q_data_leakage} 
-                    onChange={(e) => setCurrentService({...currentService, q_data_leakage: Math.min(30, Math.max(0, parseInt(e.target.value) || 0))})}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Row>
-              <Col md={4}>
-                <Form.Group className="mb-3" controlId="formQ3">
-                  <Form.Label>3. היבטים משפטיים/רגולטוריים (0-15)</Form.Label>
-                  <Form.Control 
-                    type="number" min="0" max="15"
-                    value={currentService.q_legal} 
-                    onChange={(e) => setCurrentService({...currentService, q_legal: Math.min(15, Math.max(0, parseInt(e.target.value) || 0))})}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3" controlId="formQ4">
-                  <Form.Label>4. נעילת ספק (0-15)</Form.Label>
-                  <Form.Control 
-                    type="number" min="0" max="15"
-                    value={currentService.q_vendor} 
-                    onChange={(e) => setCurrentService({...currentService, q_vendor: Math.min(15, Math.max(0, parseInt(e.target.value) || 0))})}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3" controlId="formQ5">
-                  <Form.Label>5. ניתוק שירות (0-10)</Form.Label>
-                  <Form.Control 
-                    type="number" min="0" max="10"
-                    value={currentService.q_disconnection} 
-                    onChange={(e) => setCurrentService({...currentService, q_disconnection: Math.min(10, Math.max(0, parseInt(e.target.value) || 0))})}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <hr />
-            <Form.Group className="mb-3" controlId="formCommitteeNotes">
-              <Form.Label>הערות הוועדה</Form.Label>
-              <Form.Control 
-                as="textarea" rows={4}
-                value={currentService.committee_notes} 
-                onChange={(e) => setCurrentService({...currentService, committee_notes: e.target.value})}
-              />
-            </Form.Group>
-
-          </Form>
+            <Tab eventKey="classification" title="סיווגים">
+               <Row>
+                 <Col md={4}>{renderInput('ספק מיקור חוץ מהותי?', 'is_significant_outsourcing')}</Col>
+                 <Col md={4}>{renderInput('ספק סייבר מהותי?', 'is_significant_cyber')}</Col>
+                 <Col md={4}>{renderInput('רלוונטי ל-BIA?', 'is_bia_relevant')}</Col>
+               </Row>
+               {renderInput('סיכום ועדה', 'committee_summary', 'text', 'textarea', 3)}
+               {renderInput('הערות ועדה', 'committee_notes', 'text', 'textarea', 3)}
+            </Tab>
+          </Tabs>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>סגור</Button>
-          <Button variant="primary" onClick={handleSave}>שמור שינויים</Button>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>ביטול</Button>
+          <Button variant="primary" onClick={handleSave}>שמור</Button>
         </Modal.Footer>
       </Modal>
     </Container>

@@ -10,19 +10,55 @@ describe('App Component', () => {
   it('renders the main title', () => {
     (axios.get as any).mockResolvedValue({ data: [] })
     render(<App />)
-    expect(screen.getByText('ועדת ממשל ענן')).toBeInTheDocument()
+    expect(screen.getByText('ועדת ממשל ענן - דוח מרוכז')).toBeInTheDocument()
   })
 
   it('displays new columns in table', async () => {
     const mockServices = [{
       id: 1,
-      name: 'Test Service',
-      provider: 'CustomCloud',
-      service_date: '2023-01-01',
-      representative_cto: 'Alice',
-      representative_security: 'Bob',
-      total_score: 10,
-      impact_level: 'Minimal'
+      system_name: 'Test Project',
+      organization: 'IT',
+      committee_date: '2023-01-01',
+      requesting_unit: 'Dev',
+      requesting_product_manager: 'Alice',
+      applicant: 'Bob',
+      cmdb_id: '123',
+      subsidiaries: 'Sub1',
+      solution_description: 'Desc',
+      total_score: 55,
+      approval_path: 'Board',
+      status: 'Approved',
+      committee_summary: '',
+      committee_notes: '',
+      approver: 'Charlie',
+      approval_date: '',
+      explanation_data_leakage: '',
+      score_data_leakage: 0,
+      explanation_provider_fit: '',
+      score_provider_fit: 0,
+      explanation_service_failure: '',
+      score_service_failure: 0,
+      explanation_compliance: '',
+      score_compliance: 0,
+      explanation_exit_strategy: '',
+      score_exit_strategy: 0,
+      vp_technologies: '',
+      vp_business_division: '',
+      vp_approval_date: '',
+      management_approval: '',
+      management_approval_date: '',
+      board_approval: '',
+      board_approval_date: '',
+      branch_cto: '',
+      branch_infrastructure: '',
+      dept_infosec: '',
+      tech_risk_management: '',
+      additional_factors: '',
+      other_factors: '',
+      provider_description: '',
+      is_significant_outsourcing: '',
+      is_significant_cyber: '',
+      is_bia_relevant: ''
     }];
     
     (axios.get as any).mockResolvedValue({ data: mockServices })
@@ -30,25 +66,25 @@ describe('App Component', () => {
     render(<App />)
     
     await waitFor(() => {
-      expect(screen.getByText('CustomCloud')).toBeInTheDocument()
-      expect(screen.getByText('2023-01-01')).toBeInTheDocument()
-      expect(screen.getByText('Alice / Bob')).toBeInTheDocument()
+      expect(screen.getByText('Test Project')).toBeInTheDocument()
+      expect(screen.getByText('IT')).toBeInTheDocument()
+      expect(screen.getByText('Bob')).toBeInTheDocument()
+      expect(screen.getByText('Approved')).toBeInTheDocument()
     })
   })
 
-  it('opens modal with new inputs including committee notes', async () => {
+  it('opens modal with new inputs', async () => {
     (axios.get as any).mockResolvedValue({ data: [] })
     render(<App />)
 
     fireEvent.click(screen.getByText('הוסף שירות חדש'))
 
     await waitFor(() => {
-      expect(screen.getByLabelText('נציג CTO')).toBeInTheDocument()
-      expect(screen.getByLabelText('נציג אבטחת מידע')).toBeInTheDocument()
-      expect(screen.getByLabelText('תאריך')).toBeInTheDocument()
-      expect(screen.getByLabelText('ספק')).toHaveAttribute('type', 'text')
-      // Check for the new field
-      expect(screen.getByLabelText('הערות הוועדה')).toBeInTheDocument()
+      expect(screen.getByLabelText('שם מערכת / פרויקט')).toBeInTheDocument()
+      expect(screen.getByLabelText('ארגון')).toBeInTheDocument()
+      expect(screen.getByLabelText('חטיבה דורשת')).toBeInTheDocument()
+      expect(screen.getByLabelText('מנהל מוצר דורש')).toBeInTheDocument()
+      expect(screen.getByLabelText('מגיש הבקשה')).toBeInTheDocument()
     })
   })
 })
